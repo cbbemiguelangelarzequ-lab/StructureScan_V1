@@ -1,0 +1,146 @@
+﻿Analyzing structurescan_app - copia - copia - copia...          
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\analisis_camara_screen.dart:227:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\analisis_camara_screen.dart:272:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\analisis_camara_screen.dart:415:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\analisis_camara_screen.dart:451:23 - deprecated_member_use
+  error - Missing concrete implementation of 'abstract class State<T extends StatefulWidget> with Diagnosticable.build' - lib\screens\auth_screen.dart:17:7 - non_abstract_class_inherits_abstract_member
+  error - The method '_navigateToDashboard' isn't defined for the type '_AuthScreenState' - lib\screens\auth_screen.dart:104:9 - undefined_method
+warning - The declaration '_signIn' isn't referenced - lib\screens\auth_screen.dart:124:16 - unused_element
+  error - The method '_navigateToDashboard' isn't defined for the type '_AuthScreenState' - lib\screens\auth_screen.dart:143:9 - undefined_method
+warning - The label 'value' isn't used - lib\screens\auth_screen.dart:154:27 - unused_label
+  error - Expected to find ';' - lib\screens\auth_screen.dart:154:34 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:154:51 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:154:51 - unexpected_token
+warning - The label 'hint' isn't used - lib\screens\auth_screen.dart:155:27 - unused_label
+  error - Expected to find ';' - lib\screens\auth_screen.dart:155:120 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:155:121 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:155:121 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:155:121 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:156:25 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:156:25 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:156:25 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:156:26 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:156:26 - unexpected_token
+  error - Expected to find ';' - lib\screens\auth_screen.dart:157:50 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:157:51 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:157:51 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:157:51 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:158:23 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:158:23 - expected_token
+  error - Unexpected text ']' - lib\screens\auth_screen.dart:158:23 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:158:24 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:158:24 - unexpected_token
+  error - Expected to find ';' - lib\screens\auth_screen.dart:178:29 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:178:30 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:178:30 - unexpected_token
+  error - Expected to find ';' - lib\screens\auth_screen.dart:179:48 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:179:49 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:179:49 - unexpected_token
+   info - Statements in an if should be enclosed in a block - lib\screens\auth_screen.dart:182:25 - curly_braces_in_flow_control_structures
+  error - Expected to find ';' - lib\screens\auth_screen.dart:189:25 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:189:26 - missing_identifier
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:189:26 - unexpected_token
+  error - Expected to find ';' - lib\screens\auth_screen.dart:206:23 - expected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:206:24 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:206:24 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:206:24 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:207:21 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:207:21 - expected_token
+  error - Unexpected text ']' - lib\screens\auth_screen.dart:207:21 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:207:22 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:207:22 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:207:22 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:208:19 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:208:19 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:208:19 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:208:20 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:208:20 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:208:20 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:209:17 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:209:17 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:209:17 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:209:18 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:209:18 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:209:18 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:210:15 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:210:15 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:210:15 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:210:16 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:210:16 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:210:16 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:211:13 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:211:13 - expected_token
+  error - Unexpected text ']' - lib\screens\auth_screen.dart:211:13 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:211:14 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:211:14 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:211:14 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:212:11 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:212:11 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:212:11 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:212:12 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:212:12 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:212:12 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:213:9 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:213:9 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:213:9 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:213:10 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:213:10 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:213:10 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:214:7 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:214:7 - expected_token
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:214:7 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:214:8 - missing_identifier
+  error - Expected to find ';' - lib\screens\auth_screen.dart:214:8 - expected_token
+  error - Unexpected text ',' - lib\screens\auth_screen.dart:214:8 - unexpected_token
+  error - Expected an identifier - lib\screens\auth_screen.dart:215:5 - missing_identifier
+  error - Unexpected text ')' - lib\screens\auth_screen.dart:215:5 - unexpected_token
+   info - Unnecessary empty statement - lib\screens\auth_screen.dart:215:6 - empty_statements
+  error - Expected to find '}' - lib\screens\auth_screen.dart:216:3 - expected_token
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\dashboard_profesional.dart:152:32 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\help_screen.dart:61:23 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\help_screen.dart:71:23 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\help_screen.dart:81:23 - avoid_print
+   info - The private field _factoresDetonantes could be 'final' - lib\screens\owner\anamnesis_screen.dart:30:25 - prefer_final_fields
+   info - The private field _sintomasFuncionales could be 'final' - lib\screens\owner\inspeccion_deformacion_screen.dart:26:26 - prefer_final_fields
+   info - The private field _fotosUrls could be 'final' - lib\screens\owner\inspeccion_deformacion_screen.dart:27:16 - prefer_final_fields
+   info - The private field _fotosUrls could be 'final' - lib\screens\owner\inspeccion_grieta_screen.dart:27:16 - prefer_final_fields
+   info - The private field _apariencias could be 'final' - lib\screens\owner\inspeccion_humedad_screen.dart:25:27 - prefer_final_fields
+   info - The private field _fotosUrls could be 'final' - lib\screens\owner\inspeccion_humedad_screen.dart:26:16 - prefer_final_fields
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\owner\solicitud_revision_screen.dart:340:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\professional\bandeja_solicitudes_screen.dart:171:42 - deprecated_member_use
+warning - The value of the field '_solicitudData' isn't used - lib\screens\professional\inspeccion_tecnica_screen.dart:27:25 - unused_field
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\professional\inspeccion_tecnica_screen.dart:227:32 - use_build_context_synchronously
+   info - Unnecessary use of 'toList' in a spread - lib\screens\professional\inspeccion_tecnica_screen.dart:444:18 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\professional\revision_preliminar_screen.dart:201:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\professional\revision_preliminar_screen.dart:242:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\professional\revision_preliminar_screen.dart:333:33 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\professional\revision_preliminar_screen.dart:379:16 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\professional\revision_preliminar_screen.dart:394:33 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\profile_screen.dart:25:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\profile_screen.dart:81:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\profile_screen.dart:90:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\profile_screen.dart:99:17 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\profile_screen.dart:107:19 - avoid_print
+warning - Unused import: '../models/sintoma_inspeccion.dart' - lib\services\ai_service.dart:7:8 - unused_import
+
+flutter : 123 issues 
+found. (ran in 2.2s)
+En línea: 1 Carácter: 
+1
++ flutter analyze 
+2>&1 | Out-File 
+-FilePath 
+"analysis_errors.txt" 
+-Enco ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (123 issues   
+  found. (ran in 2    
+.2s):String) [],     
+RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
