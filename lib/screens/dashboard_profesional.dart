@@ -3,9 +3,60 @@
 
 import 'package:flutter/material.dart';
 import 'package:structurescan_app/constants.dart';
+import 'package:structurescan_app/services/database_service.dart';
+import 'package:structurescan_app/widgets/modern_action_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class DashboardProfesional extends StatelessWidget {
+class DashboardProfesional extends StatefulWidget {
   const DashboardProfesional({super.key});
+
+  @override
+  State<DashboardProfesional> createState() => _DashboardProfesionalState();
+}
+
+class _DashboardProfesionalState extends State<DashboardProfesional> {
+  final DatabaseService _dbService = DatabaseService();
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  // Variables para almacenar las estadísticas
+  int _solicitudesNuevas = 0;
+  int _enProceso = 0;
+  int _completadas = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarEstadisticas();
+  }
+
+  Future<void> _cargarEstadisticas() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      
+      if (userId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Obtener estadísticas del mes usando la función de base de datos
+      final estadisticas = await _dbService.getEstadisticasMes(userId);
+
+      setState(() {
+        _solicitudesNuevas = estadisticas['solicitudes_nuevas'] ?? 0;
+        _enProceso = estadisticas['en_proceso'] ?? 0;
+        _completadas = estadisticas['completadas'] ?? 0;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error cargando estadísticas: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,165 +64,205 @@ class DashboardProfesional extends StatelessWidget {
       appBar: AppBar(
         title: const Text('StructureScan - Profesional'),
         backgroundColor: kAzulPrincipalOscuro,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline, color: kBlanco),
+            icon: const Icon(Icons.help_outline_rounded, color: kBlanco),
             onPressed: () => Navigator.of(context).pushNamed('/help'),
             tooltip: 'Ayuda',
           ),
           IconButton(
-            icon: const Icon(Icons.account_circle, color: kBlanco),
-            onPressed: () => Navigator.of(context).pushNamed('/profile'),
+            icon: const Icon(Icons.account_circle_rounded, color: kBlanco),
+            onPressed: () => Navigator.of(context).pushNamed('/perfil_usuario'),
             tooltip: 'Perfil',
           ),
           const SizedBox(width: 8),
         ],
       ),
-      backgroundColor: kGrisClaro,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Bienvenida
-            Card(
-              color: kBlanco,
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Panel Profesional',
-                      style: kTituloPantallaStyle.copyWith(fontSize: 20),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              kAzulPrincipalOscuro.withOpacity(0.05),
+              kBlanco,
+            ],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: _cargarEstadisticas,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Bienvenida con gradiente moderno
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24.0),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        kAzulPrincipalOscuro,
+                        kAzulSecundarioClaro,
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Gestiona solicitudes y realiza inspecciones técnicas',
-                      style: kBodyTextStyle.copyWith(color: kGrisOscuro),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kAzulPrincipalOscuro.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: kBlanco.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.engineering_rounded,
+                              color: kBlanco,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Panel Profesional',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: kBlanco,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Gestiona solicitudes y realiza inspecciones técnicas',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: kBlanco,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Acciones rápidas
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.80,
+                  children: [
+                    ModernActionCard(
+                      icon: Icons.inbox_rounded,
+                      title: 'Bandeja de Solicitudes',
+                      subtitle: 'Ver solicitudes pendientes',
+                      color: kAzulSecundarioClaro,
+                      onTap: () => Navigator.of(context).pushNamed('/bandeja_solicitudes'),
+                    ),
+                    ModernActionCard(
+                      icon: Icons.description_rounded,
+                      title: 'Mis Informes',
+                      subtitle: 'Informes generados',
+                      color: kVerdeExito,
+                      onTap: () => Navigator.of(context).pushNamed('/mis_informes'),
+                    ),
+                    ModernActionCard(
+                      icon: Icons.person_rounded,
+                      title: 'Mi Perfil',
+                      subtitle: 'Editar perfil profesional',
+                      color: kNaranjaAcento,
+                      onTap: () => Navigator.of(context).pushNamed('/editar_perfil_profesional'),
+                    ),
+                    ModernActionCard(
+                      icon: Icons.help_rounded,
+                      title: 'Ayuda',
+                      subtitle: 'Guía de uso',
+                      color: kGrisOscuro,
+                      onTap: () => Navigator.of(context).pushNamed('/help'),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-            // Acciones rápidas
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _buildActionCard(
-                  context,
-                  '📥 Bandeja de\nSolicitudes',
-                  'Ver solicitudes pendientes',
-                  kAzulSecundarioClaro,
-                  () => Navigator.of(context).pushNamed('/bandeja_solicitudes'),
-                ),
-                _buildActionCard(
-                  context,
-                  '📊 Mis Informes',
-                  'Informes generados',
-                  kVerdeExito,
-                  () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Funcionalidad en desarrollo - Ver informes completados'),
+                // Estadísticas (ahora funcionales)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Resumen del Mes',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: kAzulPrincipalOscuro,
                       ),
-                    );
-                  },
+                    ),
+                    if (_isLoading)
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                  ],
                 ),
-                _buildActionCard(
-                  context,
-                  '👤 Mi Perfil',
-                  'Datos profesionales',
-                  kNaranjaAcento,
-                  () => Navigator.of(context).pushNamed('/profile'),
-                ),
-                _buildActionCard(
-                  context,
-                  '❓ Ayuda',
-                  'Guía de uso',
-                  kGrisOscuro,
-                  () => Navigator.of(context).pushNamed('/help'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Estadísticas (simuladas)
-            Text(
-              'Resumen del Mes',
-              style: kTituloPantallaStyle.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard('0', 'Solicitudes\nNuevas', kRojoAdvertencia),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('0', 'En Proceso', kNaranjaAcento),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('0', 'Completadas', kVerdeExito),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String titulo,
-    String subtitulo,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      elevation: 3,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.touch_app, color: color, size: 32),
-              ),
               const SizedBox(height: 12),
-              Text(
-                titulo,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitulo,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11, color: kGrisMedio),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      _isLoading ? '-' : _solicitudesNuevas.toString(),
+                      'Solicitudes\nNuevas',
+                      kRojoAdvertencia,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      _isLoading ? '-' : _enProceso.toString(),
+                      'En Proceso',
+                      kNaranjaAcento,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      _isLoading ? '-' : _completadas.toString(),
+                      'Completadas',
+                      kVerdeExito,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildStatCard(String numero, String label, Color color) {

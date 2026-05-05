@@ -82,10 +82,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen> {
 
     final result = await Navigator.of(context).pushNamed(
       '/analisis_camara',
-      arguments: {
-        'edificacionId': idEdificacion,
-        'userRole': 'professional', // Indicar que es un profesional
-      },
+      arguments: idEdificacion, // Solo pasar el String, no un Map
     );
 
     if (result != null && result is Map<String, dynamic>) {
@@ -219,8 +216,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen> {
                   notasTexto: notasController.text.trim(),
                   requiereRefuerzo: requiereRefuerzo,
                   esHabitable: esHabitable,
-                  imagenUrl: capturaData['imagenUrl'],
-                  detecciones: capturaData['detecciones'],
+                  imagenUrl: capturaData['foto_anotada_url'] as String?,
+                  detecciones: capturaData['detecciones_ia'],
                 );
 
                 if (mounted) {
@@ -253,13 +250,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen> {
         'id_solicitud': widget.solicitudId,
         'id_profesional': userId,
         'clasificacion_tecnica': clasificacion.value,
-        'nivel_severidad': severidad.value,
-        'notas_texto': notasTexto.isNotEmpty ? notasTexto : null,
-        'elemento_estructural':
-            elementoEstructural.isNotEmpty ? elementoEstructural : null,
-        'requiere_refuerzo': requiereRefuerzo,
-        'es_habitable': esHabitable,
-        // Nota: imagen_url y detecciones podrían guardarse si extiende el schema
+        'severidad': severidad.value, // Nota: La columna se llama 'severidad' no 'nivel_severidad'
+        'notas_tecnicas': notasTexto.isNotEmpty ? notasTexto : null,
+        'requiere_evacuacion': !esHabitable, // Si NO es habitable, requiere evacuación
+        // elemento_estructural, requiere_refuerzo, es_habitable NO existen en el esquema
+        // imagen_url y detecciones tampoco existen (agregar en migración futura si se necesita)
       };
 
       await _dbService.crearHallazgo(hallazgoData);
@@ -425,18 +420,18 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen> {
                   child: ListTile(
                     leading: Icon(
                       Icons.report_problem,
-                      color: hallazgo.nivelSeveridad == NivelSeveridad.critico
+                      color: hallazgo.severidad == NivelSeveridad.critico
                           ? kRojoAdvertencia
-                          : hallazgo.nivelSeveridad == NivelSeveridad.severo
+                          : hallazgo.severidad == NivelSeveridad.severo
                               ? kNaranjaAcento
                               : kVerdeExito,
                     ),
                     title: Text(hallazgo.clasificacionTecnica.displayName),
                     subtitle: Text(
-                      'Severidad: ${hallazgo.nivelSeveridad.displayName}',
+                      'Severidad: ${hallazgo.severidad.displayName}',
                     ),
                     trailing: Text(
-                      hallazgo.elementoEstructural ?? 'N/A',
+                      hallazgo.notasTecnicas ?? 'N/A',
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),

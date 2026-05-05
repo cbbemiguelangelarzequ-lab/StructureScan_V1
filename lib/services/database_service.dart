@@ -19,7 +19,10 @@ class DatabaseService {
 
   Future<Map<String, dynamic>> getEdificacion(String id) async {
     final response =
-        await _supabase.from('edificaciones').select().eq('id', id).single();
+        await _supabase.from('edificaciones').select().eq('id', id).maybeSingle();
+    if (response == null) {
+      throw Exception('Edificación no encontrada');
+    }
     return response;
   }
 
@@ -93,10 +96,16 @@ class DatabaseService {
   }
 
   Future<List<Map<String, dynamic>>> getSolicitudesPendientes() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+    
     final response = await _supabase
         .from('solicitudes_revision')
         .select()
-        .eq('estado', 'pendiente')
+        // Mostrar solicitudes SIN asignar O asignadas a este profesional
+        .or('id_profesional.is.null,id_profesional.eq.$userId')
+        // Estados activos (usando .or() en lugar de .in_() para compatibilidad)
+        .or('estado.eq.pendiente,estado.eq.en_revision,estado.eq.programada')
         .order('nivel_riesgo', ascending: true) // ALTO primero
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
@@ -164,6 +173,15 @@ class DatabaseService {
   Future<void> actualizarInformeTecnico(
       String id, Map<String, dynamic> datos) async {
     await _supabase.from('informes_tecnicos').update(datos).eq('id', id);
+  }
+
+  Future<Map<String, dynamic>?> getInformePorId(String idInforme) async {
+    final response = await _supabase
+        .from('informes_tecnicos')
+        .select()
+        .eq('id', idInforme)
+        .maybeSingle();
+    return response;
   }
 
   // ===== MÉTODOS AUXILIARES =====
@@ -234,4 +252,247 @@ class DatabaseService {
       String idUsuario, Map<String, dynamic> datos) async {
     await _supabase.from('perfiles').update(datos).eq('id_usuario', idUsuario);
   }
+
+  Future<void> actualizarPreferenciasNotificaciones(
+      String idUsuario, Map<String, dynamic> preferencias) async {
+    await _supabase.from('perfiles').update({
+      'preferencias_notificaciones': preferencias
+    }).eq('id_usuario', idUsuario);
+  }
+
+  // ===== VALORACIONES PROFESIONALES =====
+
+  /// Obtiene todas las valoraciones de un profesional
+  Future<List<Map<String, dynamic>>> getValoracionesPorProfesional(
+      String idProfesional) async {
+    final response = await _supabase
+        .from('valoraciones_profesionales')
+        .select('*')
+        .eq('id_profesional', idProfesional)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Obtiene el promedio de valoraciones de un profesional
+  Future<double> getPromedioValoraciones(String idProfesional) async {
+    final response = await _supabase
+        .rpc('get_promedio_valoraciones', params: {'profesional_id': idProfesional});
+    return (response as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Crea una nueva valoración
+  Future<Map<String, dynamic>> crearValoracion({
+    required String idProfesional,
+    required String idPropietario,
+    required String idSolicitud,
+    required int calificacion,
+    String? comentario,
+  }) async {
+    final response = await _supabase
+        .from('valoraciones_profesionales')
+        .insert({
+          'id_profesional': idProfesional,
+          'id_propietario': idPropietario,
+          'id_solicitud': idSolicitud,
+          'calificacion': calificacion,
+          if (comentario != null) 'comentario': comentario,
+        })
+        .select()
+        .single();
+    return response;
+  }
+
+  /// Verifica si ya existe una valoración para una solicitud
+  Future<bool> existeValoracion(String idSolicitud) async {
+    final response = await _supabase
+        .from('valoraciones_profesionales')
+        .select('id')
+        .eq('id_solicitud', idSolicitud)
+        .maybeSingle();
+    return response != null;
+  }
+
+  /// Obtiene valoración por solicitud
+  Future<Map<String, dynamic>?> getValoracionPorSolicitud(
+      String idSolicitud) async {
+    final response = await _supabase
+        .from('valoraciones_profesionales')
+        .select()
+        .eq('id_solicitud', idSolicitud)
+        .maybeSingle();
+    return response;
+  }
+
+  // ===== PROFESIONALES DISPONIBLES =====
+
+  /// Obtiene lista de profesionales disponibles con sus datos
+  Future<List<Map<String, dynamic>>> getProfesionalesDisponibles() async {
+    final response = await _supabase
+        .from('perfiles')
+        .select()
+        .eq('rol', 'profesional')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Obtiene perfil completo de un profesional con estadísticas
+  Future<Map<String, dynamic>> getPerfilProfesionalCompleto(
+      String idProfesional) async {
+    final perfil = await getPerfil(idProfesional);
+    if (perfil == null) throw Exception('Profesional no encontrado');
+
+    final promedio = await getPromedioValoraciones(idProfesional);
+    final trabajosCompletados = await _supabase
+        .rpc('get_trabajos_completados', params: {'profesional_id': idProfesional});
+    final valoraciones = await getValoracionesPorProfesional(idProfesional);
+
+    return {
+      ...perfil,
+      'valoracion_promedio': promedio,
+      'trabajos_completados': trabajosCompletados ?? 0,
+      'total_valoraciones': valoraciones.length,
+      'ultimas_valoraciones': valoraciones.take(5).toList(),
+    };
+  }
+
+  // ===== CITAS TÉCNICAS =====
+
+  /// Crea una nueva cita técnica
+  Future<Map<String, dynamic>> crearCita(Map<String, dynamic> datos) async {
+    final response = await _supabase
+        .from('citas_tecnicas')
+        .insert(datos)
+        .select()
+        .single();
+    return response;
+  }
+
+  /// Obtiene cita por ID de solicitud
+  Future<Map<String, dynamic>?> getCitaPorSolicitud(
+      String idSolicitud) async {
+    final response = await _supabase
+        .from('citas_tecnicas')
+        .select()
+        .eq('id_solicitud', idSolicitud)
+        .maybeSingle();
+    return response;
+  }
+
+  /// Actualiza el estado de una cita
+  Future<void> actualizarEstadoCita(String id, String nuevoEstado) async {
+    await _supabase
+        .from('citas_tecnicas')
+        .update({'estado': nuevoEstado}).eq('id', id);
+  }
+
+  /// Obtiene citas de un profesional
+  Future<List<Map<String, dynamic>>> getCitasPorProfesional(
+      String idProfesional) async {
+    final response = await _supabase
+        .from('citas_tecnicas')
+        .select('*, solicitudes_revision(*, edificaciones(nombre_edificacion))')
+        .eq('id_profesional', idProfesional)
+        .order('fecha_programada', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Obtiene citas de un propietario
+  Future<List<Map<String, dynamic>>> getCitasPorPropietario(
+      String idPropietario) async {
+    final response = await _supabase
+        .from('citas_tecnicas')
+        .select('*')
+        .eq('id_propietario', idPropietario)
+        .order('fecha_programada', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Actualiza una cita técnica
+  Future<void> actualizarCita(String idCita, Map<String, dynamic> datos) async {
+    await _supabase
+        .from('citas_tecnicas')
+        .update(datos)
+        .eq('id', idCita);
+  }
+
+  Future<Map<String, dynamic>> getCitaPorId(String idCita) async {
+    final response = await _supabase
+        .from('citas_tecnicas')
+        .select()
+        .eq('id', idCita)
+        .single();
+    return response;
+  }
+
+  // ===== INFORMES =====
+
+  /// Obtiene todos los informes generados por un profesional
+  Future<List<Map<String, dynamic>>> getInformesPorProfesional(
+      String idProfesional) async {
+    final response = await _supabase
+        .from('informes_tecnicos')
+        .select('*, solicitudes_revision(*, edificaciones(nombre_edificacion))')
+        .eq('id_profesional', idProfesional)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Actualiza solo la URL del PDF de un informe
+  Future<void> actualizarPdfUrl(String idInforme, String pdfUrl) async {
+    await _supabase
+        .from('informes_tecnicos')
+        .update({'pdf_url': pdfUrl}).eq('id', idInforme);
+  }
+
+  /// Marca un informe como compartido en una red social
+  Future<void> marcarInformeCompartido(
+      String idInforme, String redSocial) async {
+    final informe = await _supabase
+        .from('informes_tecnicos')
+        .select('compartido_en')
+        .eq('id', idInforme)
+        .single();
+
+    List<String> compartidoEn =
+        List<String>.from(informe['compartido_en'] ?? []);
+    if (!compartidoEn.contains(redSocial)) {
+      compartidoEn.add(redSocial);
+    }
+
+    await _supabase
+        .from('informes_tecnicos')
+        .update({'compartido_en': compartidoEn}).eq('id', idInforme);
+  }
+
+  // ===== ESTADÍSTICAS =====
+
+  /// Obtiene estadísticas del mes para un profesional
+  Future<Map<String, dynamic>> getEstadisticasMes(
+      String idProfesional) async {
+    final response = await _supabase.rpc('get_estadisticas_mes',
+        params: {'profesional_id': idProfesional});
+
+    if (response is List && response.isNotEmpty) {
+      return response[0] as Map<String, dynamic>;
+    }
+
+    return {
+      'solicitudes_nuevas': 0,
+      'en_proceso': 0,
+      'completadas': 0,
+      'valoracion_promedio': 0.0,
+    };
+  }
+
+  /// Obtiene solicitudes asignadas a un profesional (para bandeja)
+  Future<List<Map<String, dynamic>>> getSolicitudesPorProfesional(
+      String idProfesional) async {
+    final response = await _supabase
+        .from('solicitudes_revision')
+        .select('*, edificaciones(*), perfiles!id_propietario(full_name, phone)')
+        .eq('id_profesional', idProfesional)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }
+

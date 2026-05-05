@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants.dart';
+import '../services/image_processing_service.dart';
+import '../widgets/modern_loading_overlay.dart';
 
 // Función de ayuda para los colores de las clases detectadas
 Color getClassColor(String clase) {
@@ -43,12 +45,17 @@ class AnalisisCamaraScreen extends StatefulWidget {
 }
 
 class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
+  final _imageService = ImageProcessingService();
+  
   bool _estaCargando = false;
   File? _imagenCapturada;
   List<dynamic> _detections = [];
   String _error = "";
   Size _imageSize = Size.zero;
-  String? _urlImagenGuardada; // URL de la imagen guardada en Supabase
+  
+  // URLs de ambas versiones
+  String? _urlImagenOriginal;
+  String? _urlImagenAnotada;
 
   Future<void> _capturarYAnalizar() async {
     final picker = ImagePicker();
@@ -84,13 +91,18 @@ class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
       // 3. Análisis con Roboflow (Segmentación)
       final jsonRoboflow = await _getRoboflowSegmentation(archivoImagen);
 
-      // 4. Guardado en Supabase (solo la imagen, detections se muestran pero no se guardan aún)
-      final urlImagen = await _subirImagenASupabase(archivoImagen);
+      // 4. Procesar y guardar AMBAS imágenes (original + anotada)
+      final resultado = await _imageService.procesarYGuardarDetecciones(
+        imagenOriginal: archivoImagen,
+        edificacionId: widget.edificacionId,
+        deteccionesExistentes: jsonRoboflow,
+      );
 
       setState(() {
         _estaCargando = false;
         _detections = jsonRoboflow['predictions'] ?? [];
-        _urlImagenGuardada = urlImagen;
+        _urlImagenOriginal = resultado['foto_original_url'];
+        _urlImagenAnotada = resultado['foto_anotada_url'];
       });
 
       if (mounted) {
@@ -172,7 +184,7 @@ class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
   }
 
   Future<void> _guardarYContinuar() async {
-    if (_urlImagenGuardada == null) {
+    if (_urlImagenOriginal == null || _urlImagenAnotada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Primero debes capturar una foto'),
@@ -182,9 +194,15 @@ class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
       return;
     }
 
-    // Volver a la pantalla anterior con la URL de la imagen
+    // Volver a la pantalla anterior con AMBAS URLs y detecciones
     if (mounted) {
-      Navigator.of(context).pop(_urlImagenGuardada);
+      Navigator.of(context).pop({
+        'foto_original_url': _urlImagenOriginal,
+        'foto_anotada_url': _urlImagenAnotada,
+        'detecciones_ia': {
+          'predictions': _detections,
+        },
+      });
     }
   }
 
@@ -195,7 +213,7 @@ class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
         title: const Text("Escáner Estructural IA"),
         backgroundColor: kAzulPrincipalOscuro,
         actions: [
-          if (_urlImagenGuardada != null)
+          if (_urlImagenAnotada != null)
             IconButton(
               icon: const Icon(Icons.check, color: kVerdeExito),
               onPressed: _guardarYContinuar,
@@ -264,82 +282,84 @@ class _AnalisisCamaraScreenState extends State<AnalisisCamaraScreen> {
       );
     }
 
-    return Column(
+    return Stack(
       children: [
-        // Banner de información
-        if (_detections.isNotEmpty)
-          Container(
-            color: kVerdeExito.withOpacity(0.2),
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle, color: kVerdeExito),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${_detections.length} patología(s) detectada(s) por la IA',
-                    style: const TextStyle(
-                      color: kVerdeExito,
-                      fontWeight: FontWeight.bold,
+        Column(
+          children: [
+            // Banner de información
+            if (_detections.isNotEmpty)
+              Container(
+                color: kVerdeExito.withOpacity(0.2),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: kVerdeExito),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_detections.length} patología(s) detectada(s) por la IA',
+                        style: const TextStyle(
+                          color: kVerdeExito,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Imagen con detecciones
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.contain,
+                        child: SizedBox(
+                          width: _imageSize.width,
+                          height: _imageSize.height,
+                          child: Stack(
+                            children: [
+                              Image.file(_imagenCapturada!, fit: BoxFit.fill),
+                              if (_detections.isNotEmpty)
+                                ..._buildInteractiveMasks(_detections, _imageSize),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Botón de guardar
+            if (_urlImagenAnotada != null)
+              Container(
+                color: kAzulPrincipalOscuro,
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _guardarYContinuar,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Guardar Foto y Continuar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kVerdeExito,
+                      foregroundColor: kBlanco,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-        // Imagen con detecciones
-        Expanded(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: _imageSize.width,
-                      height: _imageSize.height,
-                      child: Stack(
-                        children: [
-                          Image.file(_imagenCapturada!, fit: BoxFit.fill),
-                          if (_detections.isNotEmpty)
-                            ..._buildInteractiveMasks(_detections, _imageSize),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (_estaCargando)
-                    Container(
-                      color: Colors.black54,
-                      child: const Center(
-                        child: CircularProgressIndicator(color: kNaranjaAcento),
-                      ),
-                    ),
-                ],
               ),
-            ),
-          ),
+          ],
         ),
-
-        // Botón de guardar
-        if (_urlImagenGuardada != null)
-          Container(
-            color: kAzulPrincipalOscuro,
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _guardarYContinuar,
-                icon: const Icon(Icons.check),
-                label: const Text('Guardar Foto y Continuar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kVerdeExito,
-                  foregroundColor: kBlanco,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
+        if (_estaCargando)
+          ModernLoadingOverlay(
+            message: 'Procesando imagen con IA...',
+            isOverlay: true,
           ),
       ],
     );

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../models/edificacion.dart';
 import '../../services/database_service.dart';
+import '../../widgets/location_picker_widget.dart';
+import '../../widgets/modern_alert_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PerfilVulnerabilidadScreen extends StatefulWidget {
@@ -37,6 +39,10 @@ class _PerfilVulnerabilidadScreenState
   TipoSuelo? _tipoSuelo;
   TipoConstruccion? _tipoConstruccion;
   bool _haTenidoModificaciones = false;
+  
+  // Datos de ubicación
+  double? _latitud;
+  double? _longitud;
 
   @override
   void initState() {
@@ -64,12 +70,19 @@ class _PerfilVulnerabilidadScreenState
         _tipoSuelo = edificacion.tipoSuelo;
         _tipoConstruccion = edificacion.tipoConstruccion;
         _haTenidoModificaciones = edificacion.haTenidoModificaciones;
+        _latitud = edificacion.latitud;
+        _longitud = edificacion.longitud;
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al cargar datos',
+          type: AlertType.error,
         );
+        if (widget.edificacionId != null) {
+          Navigator.of(context).pop();
+        }
       }
     } finally {
       setState(() => _isLoading = false);
@@ -81,17 +94,25 @@ class _PerfilVulnerabilidadScreenState
       return;
     }
 
+    if (_haTenidoModificaciones && _modificacionesController.text.trim().isEmpty) {
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Debe describir las modificaciones realizadas',
+        type: AlertType.warning,
+      );
+      return;
+    }
+
     // Validar que todos los campos requeridos estén completos
     if (_tipoMaterial == null ||
         _tipoTecho == null ||
         _formaGeometrica == null ||
         _tipoSuelo == null ||
         _tipoConstruccion == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los pasos'),
-          backgroundColor: kNaranjaAcento,
-        ),
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Por favor complete todos los pasos',
+        type: AlertType.warning,
       );
       return;
     }
@@ -102,7 +123,9 @@ class _PerfilVulnerabilidadScreenState
         id: widget.edificacionId,
         idUsuario: Supabase.instance.client.auth.currentUser!.id,
         nombreEdificacion: _nombreController.text,
-        direccion: _direccionController.text,
+        direccion: _direccionController.text.isNotEmpty ? _direccionController.text : null,
+        latitud: _latitud,
+        longitud: _longitud,
         tipoMaterial: _tipoMaterial!,
         tipoTecho: _tipoTecho!,
         formaGeometrica: _formaGeometrica!,
@@ -133,9 +156,15 @@ class _PerfilVulnerabilidadScreenState
         }
       }
     } catch (e) {
+      // Debug: imprimir error completo
+      print('ERROR AL GUARDAR EDIFICACIÓN: $e');
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al guardar edificación',
+          type: AlertType.error,
+          duration: const Duration(seconds: 5),
         );
       }
     } finally {
@@ -200,13 +229,69 @@ class _PerfilVulnerabilidadScreenState
                 v == null || v.isEmpty ? 'Campo requerido' : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _direccionController,
-            decoration: const InputDecoration(
-              labelText: 'Dirección (opcional)',
-              hintText: 'Ej: Av. Principal 123',
-            ),
-            maxLines: 2,
+          // Botón para seleccionar ubicación
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final resultado = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LocationPickerWidget(
+                        initialLatitude: _latitud,
+                        initialLongitude: _longitud,
+                        initialAddress: _direccionController.text,
+                      ),
+                    ),
+                  );
+                  
+                  if (resultado != null && resultado is Map<String, dynamic>) {
+                    setState(() {
+                      _direccionController.text = resultado['address'] ?? '';
+                      _latitud = resultado['latitude'];
+                      _longitud = resultado['longitude'];
+                    });
+                  }
+                },
+                icon: const Icon(Icons.location_on_rounded),
+                label: Text(
+                  _direccionController.text.isEmpty
+                      ? 'Seleccionar ubicación en mapa'
+                      : 'Cambiar ubicación',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                  side: BorderSide(color: kAzulSecundarioClaro),
+                ),
+              ),
+              if (_direccionController.text.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: kAzulSecundarioClaro.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: kAzulSecundarioClaro.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: kVerdeExito, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _direccionController.text,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

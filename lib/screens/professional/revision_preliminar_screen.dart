@@ -6,6 +6,7 @@ import '../../constants.dart';
 import '../../models/solicitud_revision.dart';
 import '../../models/edificacion.dart';
 import '../../services/database_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RevisionPreliminarScreen extends StatefulWidget {
   final String solicitudId;
@@ -90,8 +91,8 @@ class _RevisionPreliminarScreenState extends State<RevisionPreliminarScreen> {
       await _dbService.actualizarSolicitudRevision(
         widget.solicitudId,
         {
-          'estado': 'rechazada',
-          'respuesta_preliminar': _respuestaController.text.trim(),
+          'estado': 'descartada',
+          'nota_profesional': _respuestaController.text.trim(),
         },
       );
 
@@ -146,6 +147,21 @@ class _RevisionPreliminarScreenState extends State<RevisionPreliminarScreen> {
           ),
         );
       }
+    }
+  }
+
+  // Obtener cita programada para esta solicitud
+  Future<Map<String, dynamic>?> _obtenerCitaProgramada() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('citas_tecnicas')
+          .select()
+          .eq('id_solicitud', widget.solicitudId)
+          .maybeSingle();
+      return response;
+    } catch (e) {
+      debugPrint('Error al obtener cita: $e');
+      return null;
     }
   }
 
@@ -358,22 +374,70 @@ class _RevisionPreliminarScreenState extends State<RevisionPreliminarScreen> {
             const Text('No hay síntomas registrados')
           else
             ..._sintomas.map((sintoma) {
+              // fotos_urls es un array en la BD
+              final List<dynamic> fotosUrls = sintoma['fotos_urls'] ?? [];
+              
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: sintoma['imagen_url'] != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            sintoma['imagen_url'],
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      title: Text(
+                        sintoma['tipo_sintoma'] ?? 'Sin tipo',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(sintoma['descripcion'] ?? 'Sin descripción'),
+                    ),
+                    // Mostrar todas las fotos del array
+                    if (fotosUrls.isNotEmpty)
+                      ...fotosUrls.map((fotoUrl) {
+                        return GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => Dialog(
+                                child: InteractiveViewer(
+                                  child: Image.network(fotoUrl),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                fotoUrl,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(16),
+                                    color: Colors.grey[200],
+                                    child: const Column(
+                                      children: [
+                                        Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                                        SizedBox(height: 8),
+                                        Text('Error al cargar imagen'),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                        )
-                      : const Icon(Icons.image_not_supported),
-                  title: Text(sintoma['tipo_sintoma'] ?? 'Sin tipo'),
-                  subtitle: Text(sintoma['descripcion'] ?? 'Sin descripción'),
+                        );
+                      }).toList()
+                    else
+                      const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: Text(
+                          'Sin fotos',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                  ],
                 ),
               );
             }).toList(),
@@ -456,18 +520,99 @@ class _RevisionPreliminarScreenState extends State<RevisionPreliminarScreen> {
             style: TextStyle(color: kGrisOscuro),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _agendarVisitaTecnica,
-              icon: const Icon(Icons.event),
-              label: const Text('Programar Visita Técnica'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kVerdeExito,
-                foregroundColor: kBlanco,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
+          
+          // Botón condicional según estado de cita
+          FutureBuilder<Map<String, dynamic>?>(
+            future: _obtenerCitaProgramada(),
+            builder: (context, snapshot) {
+              final cita = snapshot.data;
+              final estadoCita = cita?['estado'] as String?;
+              
+              // Caso 1: No hay cita → Mostrar "Programar"
+              if (cita == null) {
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/agendar_cita', arguments: {
+                        'idSolicitud': widget.solicitudId,
+                        'idPropietario': _solicitudData?['id_propietario'],
+                        'nombreEdificacion': _edificacionData?['nombre_edificacion'] ?? 'Edificación',
+                        'direccionEdificacion': _edificacionData?['direccion'],
+                      });
+                    },
+                    icon: const Icon(Icons.event),
+                    label: const Text('Programar Visita Técnica'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kVerdeExito,
+                      foregroundColor: kBlanco,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                );
+              }
+              
+              // Caso 2: Cita pendiente → Deshabilitado
+              if (estadoCita == 'pendiente_confirmacion') {
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.schedule),
+                    label: const Text('Esperando Confirmación del Propietario'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      disabledBackgroundColor: kGrisMedio.withOpacity(0.3),
+                      disabledForegroundColor: kGrisOscuro,
+                    ),
+                  ),
+                );
+              }
+              
+              // Caso 3: Cita confirmada → Ir a inspección
+              if (estadoCita == 'confirmada') {
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        '/inspeccion_tecnica',
+                        arguments: widget.solicitudId,
+                      );
+                    },
+                    icon: const Icon(Icons.assignment),
+                    label: const Text('Realizar Inspección Técnica'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kAzulPrincipalOscuro,
+                      foregroundColor: kBlanco,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                );
+              }
+              
+              // Caso 4: Otros estados (cancelada, etc.) → Reprogramar
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/agendar_cita', arguments: {
+                      'idSolicitud': widget.solicitudId,
+                      'idPropietario': _solicitudData?['id_propietario'],
+                      'nombreEdificacion': _edificacionData?['nombre_edificacion'] ?? 'Edificación',
+                      'direccionEdificacion': _edificacionData?['direccion'],
+                    });
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reprogramar Visita'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNaranjaAcento,
+                    foregroundColor: kBlanco,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

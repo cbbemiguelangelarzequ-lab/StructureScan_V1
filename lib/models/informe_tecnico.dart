@@ -14,6 +14,10 @@ class InformeTecnico {
   final bool esHabitable;
   final bool requiereRefuerzo;
   
+  // PDF y compartir
+  final String? pdfUrl;
+  final List<String>? compartidoEn; // ['whatsapp', 'facebook', 'email']
+  
   // Firma y metadata
   final String? firmaProfesional;
   final DateTime? createdAt;
@@ -27,6 +31,8 @@ class InformeTecnico {
     required this.conclusionFinal,
     this.esHabitable = true,
     this.requiereRefuerzo = false,
+    this.pdfUrl,
+    this.compartidoEn,
     this.firmaProfesional,
     this.createdAt,
     this.updatedAt,
@@ -42,6 +48,10 @@ class InformeTecnico {
       conclusionFinal: json['conclusion_final'] as String,
       esHabitable: json['es_habitable'] as bool? ?? true,
       requiereRefuerzo: json['requiere_refuerzo'] as bool? ?? false,
+      pdfUrl: json['pdf_url'] as String?,
+      compartidoEn: json['compartido_en'] != null
+          ? List<String>.from(json['compartido_en'] as List)
+          : null,
       firmaProfesional: json['firma_profesional'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -62,6 +72,8 @@ class InformeTecnico {
       'conclusion_final': conclusionFinal,
       'es_habitable': esHabitable,
       'requiere_refuerzo': requiereRefuerzo,
+      if (pdfUrl != null) 'pdf_url': pdfUrl,
+      if (compartidoEn != null) 'compartido_en': compartidoEn,
       if (firmaProfesional != null) 'firma_profesional': firmaProfesional,
     };
   }
@@ -74,6 +86,8 @@ class InformeTecnico {
     String? conclusionFinal,
     bool? esHabitable,
     bool? requiereRefuerzo,
+    String? pdfUrl,
+    List<String>? compartidoEn,
     String? firmaProfesional,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -86,6 +100,8 @@ class InformeTecnico {
       conclusionFinal: conclusionFinal ?? this.conclusionFinal,
       esHabitable: esHabitable ?? this.esHabitable,
       requiereRefuerzo: requiereRefuerzo ?? this.requiereRefuerzo,
+      pdfUrl: pdfUrl ?? this.pdfUrl,
+      compartidoEn: compartidoEn ?? this.compartidoEn,
       firmaProfesional: firmaProfesional ?? this.firmaProfesional,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

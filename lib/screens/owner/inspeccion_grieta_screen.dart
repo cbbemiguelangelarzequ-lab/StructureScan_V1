@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../models/sintoma_inspeccion.dart';
 import '../../services/database_service.dart';
+import '../../widgets/modern_alert_dialog.dart';
 
 class InspeccionGrietaScreen extends StatefulWidget {
   final String edificacionId;
@@ -24,16 +25,17 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
   DireccionGrieta? _direccion;
   EspesorGrieta? _espesor;
   CantidadGrietas? _cantidad;
-  List<String> _fotosUrls = [];
+  
+  // Fotos capturadas con IA
+  final List<Map<String, dynamic>> _fotosCapturadasConIA = [];
 
   Future<void> _guardarSintoma() async {
     // Validación
     if (_ubicacion == null || _direccion == null || _espesor == null || _cantidad == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los campos'),
-          backgroundColor: kNaranjaAcento,
-        ),
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Por favor complete todos los campos',
+        type: AlertType.warning,
       );
       return;
     }
@@ -47,7 +49,22 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
         direccionGrieta: _direccion,
         espesorGrieta: _espesor,
         cantidadGrietas: _cantidad,
-        fotosUrls: _fotosUrls.isNotEmpty ? _fotosUrls : null,
+        // Guardar URLs de imágenes anotadas en el array
+        fotosUrls: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA
+                .map((foto) => foto['foto_anotada_url'] as String)
+                .toList()
+            : null,
+        // Si hay al menos una foto, guardar la primera en los campos individuales
+        fotoOriginalUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_original_url'] as String?
+            : null,
+        fotoAnotadaUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_anotada_url'] as String?
+            : null,
+        deteccionesIA: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['detecciones_ia'] as Map<String, dynamic>?
+            : null,
       );
 
       await _dbService.crearSintoma(sintoma.toJson());
@@ -61,8 +78,10 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al guardar síntoma',
+          type: AlertType.error,
         );
       }
     } finally {
@@ -256,24 +275,30 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
               arguments: widget.edificacionId,
             );
             
-            if (resultado != null && resultado is String) {
+            // El resultado ahora es un Map con ambas URLs y detecciones
+            if (resultado != null && resultado is Map<String, dynamic>) {
               setState(() {
-                _fotosUrls.add(resultado);
+                _fotosCapturadasConIA.add({
+                  'foto_original_url': resultado['foto_original_url'],
+                  'foto_anotada_url': resultado['foto_anotada_url'],
+                  'detecciones_ia': resultado['detecciones_ia'],
+                });
               });
             }
           },
-          icon: const Icon(Icons.camera_alt),
+          icon: const Icon(Icons.camera_alt_rounded),
           label: const Text('Tomar Foto con IA'),
         ),
-        if (_fotosUrls.isNotEmpty)
+        if (_fotosCapturadasConIA.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _fotosUrls.asMap().entries.map((entry) {
+              children: _fotosCapturadasConIA.asMap().entries.map((entry) {
                 final index = entry.key;
-                final url = entry.value;
+                final foto = entry.value;
+                final urlAnotada = foto['foto_anotada_url'] as String;
                 return Stack(
                   children: [
                     Container(
@@ -286,7 +311,7 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: Image.network(
-                          url,
+                          urlAnotada,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 40),
                         ),
@@ -296,7 +321,7 @@ class _InspeccionGrietaScreenState extends State<InspeccionGrietaScreen> {
                       right: 0,
                       top: 0,
                       child: GestureDetector(
-                        onTap: () => setState(() => _fotosUrls.removeAt(index)),
+                        onTap: () => setState(() => _fotosCapturadasConIA.removeAt(index)),
                         child: Container(
                           decoration: const BoxDecoration(
                             color: kRojoAdvertencia,

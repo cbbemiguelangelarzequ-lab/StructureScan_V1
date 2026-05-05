@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../models/sintoma_inspeccion.dart';
 import '../../services/database_service.dart';
+import '../../widgets/modern_alert_dialog.dart';
 
 class InspeccionHumedadScreen extends StatefulWidget {
   final String edificacionId;
@@ -22,17 +23,17 @@ class _InspeccionHumedadScreenState extends State<InspeccionHumedadScreen> {
 
   // Selecciones del usuario
   UbicacionElemento? _ubicacion;
-  List<AparienciaHumedad> _apariencias = [];
-  List<String> _fotosUrls = [];
+  final List<AparienciaHumedad> _apariencias = [];
+  
+  final List<Map<String, dynamic>> _fotosCapturadasConIA = [];
 
   Future<void> _guardarSintoma() async {
     // Validación
     if (_ubicacion == null || _apariencias.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los campos'),
-          backgroundColor: kNaranjaAcento,
-        ),
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Por favor complete todos los campos',
+        type: AlertType.warning,
       );
       return;
     }
@@ -44,7 +45,21 @@ class _InspeccionHumedadScreenState extends State<InspeccionHumedadScreen> {
         tipoSintoma: TipoSintoma.humedad,
         ubicacion: _ubicacion!,
         aparienciaHumedad: _apariencias,
-        fotosUrls: _fotosUrls.isNotEmpty ? _fotosUrls : null,
+        // Guardar URLs de imágenes anotadas
+        fotosUrls: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA
+                .map((foto) => foto['foto_anotada_url'] as String)
+                .toList()
+            : null,
+        fotoOriginalUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_original_url'] as String?
+            : null,
+        fotoAnotadaUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_anotada_url'] as String?
+            : null,
+        deteccionesIA: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['detecciones_ia'] as Map<String, dynamic>?
+            : null,
       );
 
       await _dbService.crearSintoma(sintoma.toJson());
@@ -58,8 +73,10 @@ class _InspeccionHumedadScreenState extends State<InspeccionHumedadScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al guardar síntoma',
+          type: AlertType.error,
         );
       }
     } finally {
@@ -194,7 +211,7 @@ class _InspeccionHumedadScreenState extends State<InspeccionHumedadScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '3. Fotos (Opcional pero recomendado)',
+          '3. Fotos (Recomendado)',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -204,19 +221,82 @@ class _InspeccionHumedadScreenState extends State<InspeccionHumedadScreen> {
               '/analisis_camara',
               arguments: widget.edificacionId,
             );
-            if (resultado != null && resultado is String) {
-              setState(() => _fotosUrls.add(resultado));
+            if (resultado != null && resultado is Map<String, dynamic>) {
+              setState(() {
+                _fotosCapturadasConIA.add({
+                  'foto_original_url': resultado['foto_original_url'],
+                  'foto_anotada_url': resultado['foto_anotada_url'],
+                  'detecciones_ia': resultado['detecciones_ia'],
+                });
+              });
             }
           },
-          icon: const Icon(Icons.camera_alt),
+          icon: const Icon(Icons.camera_alt_rounded),
           label: const Text('Tomar Foto con IA'),
         ),
-        if (_fotosUrls.isNotEmpty)
+        if (_fotosCapturadasConIA.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              '${_fotosUrls.length} foto(s) capturada(s) ✓',
-              style: const TextStyle(color: kVerdeExito, fontWeight: FontWeight.bold),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_fotosCapturadasConIA.length} foto(s) capturada(s) ✓',
+                  style: const TextStyle(
+                      color: kVerdeExito, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _fotosCapturadasConIA.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final foto = entry.value;
+                    final urlAnotada = foto['foto_anotada_url'] as String;
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            urlAnotada,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 100,
+                                height: 100,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.error),
+                              );
+                            },
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => _fotosCapturadasConIA.removeAt(index));
+                            },
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
       ],

@@ -8,6 +8,7 @@ import '../../constants.dart';
 import '../../services/ai_service.dart';
 import '../../services/database_service.dart';
 import '../../models/informe_tecnico.dart';
+import '../../widgets/modern_loading_overlay.dart';
 
 class GeneracionInformeScreen extends StatefulWidget {
   final String solicitudId;
@@ -27,6 +28,7 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
   final _aiService = AIService();
   
   bool _isGenerating = false;
+  bool _isSaving = false;
   bool _isEditing = false;
   String? _informeMarkdown;
   
@@ -129,6 +131,8 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
   }
 
   Future<void> _guardarInforme() async {
+    if (_isSaving) return; // Prevenir doble clic
+    
     if (_informeMarkdown == null || _informeMarkdown!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -149,6 +153,8 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
       return;
     }
 
+    setState(() => _isSaving = true);
+    
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) throw Exception('Usuario no autenticado');
@@ -204,6 +210,8 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
+      setState(() => _isSaving = false);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -233,19 +241,9 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
         ],
       ),
       body: _isGenerating
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: kNaranjaAcento),
-                  SizedBox(height: 24),
-                  Text(
-                    'Generando informe con IA...\nEsto puede tomar unos momentos.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
+          ? ModernLoadingOverlay(
+              message: 'Generando informe con IA...\nEsto puede tomar unos momentos.',
+              isOverlay: false,
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -299,7 +297,7 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _generarInforme,
+                onPressed: _isGenerating ? null : _generarInforme,
                 icon: const Icon(Icons.psychology),
                 label: const Text('Generar Informe con IA'),
                 style: ElevatedButton.styleFrom(
@@ -426,9 +424,9 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _guardarInforme,
+            onPressed: (_isSaving || _isGenerating) ? null : _guardarInforme,
             icon: const Icon(Icons.save),
-            label: const Text('Guardar y Publicar Informe'),
+            label: Text(_isSaving ? 'Guardando...' : 'Guardar y Publicar Informe'),
             style: ElevatedButton.styleFrom(
               backgroundColor: kVerdeExito,
               foregroundColor: kBlanco,
@@ -440,7 +438,7 @@ class _GeneracionInformeScreenState extends State<GeneracionInformeScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _generarInforme,
+            onPressed: (_isGenerating || _isSaving) ? null : _generarInforme,
             icon: const Icon(Icons.refresh),
             label: const Text('Re-generar Informe'),
             style: OutlinedButton.styleFrom(

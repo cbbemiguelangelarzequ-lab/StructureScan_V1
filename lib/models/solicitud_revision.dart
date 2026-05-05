@@ -17,8 +17,12 @@ class SolicitudRevision {
   // Estado de Seguimiento
   final EstadoSolicitud estado;
 
+  // Tipo de Servicio
+  final TipoServicio? tipoServicio;
+  final double? costoAcordado;
+
   // Respuesta del Profesional
-  final String? respuestaPreliminar;
+  final String? notaProfesional;
   final DateTime? fechaVisitaProgramada;
 
   // Metadata
@@ -33,8 +37,10 @@ class SolicitudRevision {
     required this.sintomaPrincipal,
     required this.descripcionBreve,
     required this.nivelRiesgo,
+    this.tipoServicio,
+    this.costoAcordado,
     this.estado = EstadoSolicitud.pendiente,
-    this.respuestaPreliminar,
+    this.notaProfesional,
     this.fechaVisitaProgramada,
     this.createdAt,
     this.updatedAt,
@@ -50,8 +56,14 @@ class SolicitudRevision {
       sintomaPrincipal: json['sintoma_principal'] as String,
       descripcionBreve: json['descripcion_breve'] as String,
       nivelRiesgo: NivelRiesgo.fromString(json['nivel_riesgo'] as String),
+      tipoServicio: json['tipo_servicio'] != null
+          ? TipoServicio.fromString(json['tipo_servicio'] as String)
+          : null,
+      costoAcordado: json['costo_acordado'] != null
+          ? (json['costo_acordado'] as num).toDouble()
+          : null,
       estado: EstadoSolicitud.fromString(json['estado'] as String),
-      respuestaPreliminar: json['respuesta_preliminar'] as String?,
+      notaProfesional: json['nota_profesional'] as String?,
       fechaVisitaProgramada: json['fecha_visita_programada'] != null
           ? DateTime.parse(json['fecha_visita_programada'] as String)
           : null,
@@ -74,9 +86,11 @@ class SolicitudRevision {
       'sintoma_principal': sintomaPrincipal,
       'descripcion_breve': descripcionBreve,
       'nivel_riesgo': nivelRiesgo.value,
+      if (tipoServicio != null) 'tipo_servicio': tipoServicio!.value,
+      if (costoAcordado != null) 'costo_acordado': costoAcordado,
       'estado': estado.value,
-      if (respuestaPreliminar != null)
-        'respuesta_preliminar': respuestaPreliminar,
+      if (notaProfesional != null)
+        'nota_profesional': notaProfesional,
       if (fechaVisitaProgramada != null)
         'fecha_visita_programada': fechaVisitaProgramada!.toIso8601String(),
     };
@@ -90,8 +104,10 @@ class SolicitudRevision {
     String? sintomaPrincipal,
     String? descripcionBreve,
     NivelRiesgo? nivelRiesgo,
+    TipoServicio? tipoServicio,
+    double? costoAcordado,
     EstadoSolicitud? estado,
-    String? respuestaPreliminar,
+    String? notaProfesional,
     DateTime? fechaVisitaProgramada,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -104,8 +120,10 @@ class SolicitudRevision {
       sintomaPrincipal: sintomaPrincipal ?? this.sintomaPrincipal,
       descripcionBreve: descripcionBreve ?? this.descripcionBreve,
       nivelRiesgo: nivelRiesgo ?? this.nivelRiesgo,
+      tipoServicio: tipoServicio ?? this.tipoServicio,
+      costoAcordado: costoAcordado ?? this.costoAcordado,
       estado: estado ?? this.estado,
-      respuestaPreliminar: respuestaPreliminar ?? this.respuestaPreliminar,
+      notaProfesional: notaProfesional ?? this.notaProfesional,
       fechaVisitaProgramada:
           fechaVisitaProgramada ?? this.fechaVisitaProgramada,
       createdAt: createdAt ?? this.createdAt,
@@ -121,7 +139,8 @@ enum EstadoSolicitud {
       'en_revision', 'En Revisión', 'El profesional está evaluando la solicitud'),
   programada('programada', 'Visita Programada', 'Visita técnica agendada'),
   completada('completada', 'Completada', 'Informe técnico generado'),
-  rechazada('rechazada', 'Rechazada', 'No requiere intervención estructural');
+  descartada('descartada', 'Descartada', 'No requiere intervención estructural'),
+  rechazada('rechazada', 'Rechazada', 'No requiere intervención estructural'); // Mantener por compatibilidad
 
   final String value;
   final String displayName;
@@ -130,6 +149,25 @@ enum EstadoSolicitud {
   const EstadoSolicitud(this.value, this.displayName, this.description);
 
   static EstadoSolicitud fromString(String value) {
-    return EstadoSolicitud.values.firstWhere((e) => e.value == value);
+    return EstadoSolicitud.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => EstadoSolicitud.pendiente, // Valor por defecto si no se encuentra
+    );
+  }
+}
+
+// Enum para Tipo de Servicio
+enum TipoServicio {
+  consejoRapido('consejo_rapido', 'Consejo Rápido', 'Sin visita técnica'),
+  visitaTecnica('visita_tecnica', 'Visita Técnica', 'Inspección en sitio');
+
+  final String value;
+  final String displayName;
+  final String description;
+
+  const TipoServicio(this.value, this.displayName, this.description);
+
+  static TipoServicio fromString(String value) {
+    return TipoServicio.values.firstWhere((e) => e.value == value);
   }
 }

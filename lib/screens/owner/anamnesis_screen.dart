@@ -1,10 +1,11 @@
 // lib/screens/owner/anamnesis_screen.dart
-// Pan talla de Fase C: Anamnesis (Historia y Evolución)
+// Pantalla de Fase C: Anamnesis (Historia y Evolución)
 
 import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../models/anamnesis.dart';
 import '../../services/database_service.dart';
+import '../../widgets/modern_alert_dialog.dart';
 
 class AnamnesisScreen extends StatefulWidget {
   final String edificacionId;
@@ -37,11 +38,10 @@ class _AnamnesisScreenState extends State<AnamnesisScreen> {
     }
 
     if (_cuandoDescubrio == null || _comportamiento == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los campos requeridos'),
-          backgroundColor: kNaranjaAcento,
-        ),
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Por favor complete todos los campos requeridos',
+        type: AlertType.warning,
       );
       return;
     }
@@ -74,8 +74,10 @@ class _AnamnesisScreenState extends State<AnamnesisScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al guardar anamnesis',
+          type: AlertType.error,
         );
       }
     } finally {

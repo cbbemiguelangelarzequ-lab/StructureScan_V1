@@ -24,6 +24,11 @@ class SintomaInspeccion {
 
   // Referencias a fotos
   final List<String>? fotosUrls;
+  
+  // IA: Fotos con detección automática
+  final String? fotoOriginalUrl;  // Imagen sin anotaciones
+  final String? fotoAnotadaUrl;    // Imagen con bounding boxes dibujados
+  final Map<String, dynamic>? deteccionesIA; // JSON con predicciones de Roboflow
 
   final DateTime? createdAt;
 
@@ -38,6 +43,9 @@ class SintomaInspeccion {
     this.aparienciaHumedad,
     this.sintomasFuncionales,
     this.fotosUrls,
+    this.fotoOriginalUrl,
+    this.fotoAnotadaUrl,
+    this.deteccionesIA,
     this.createdAt,
   });
 
@@ -70,6 +78,9 @@ class SintomaInspeccion {
       fotosUrls: json['fotos_urls'] != null
           ? List<String>.from(json['fotos_urls'] as List)
           : null,
+      fotoOriginalUrl: json['foto_original_url'] as String?,
+      fotoAnotadaUrl: json['foto_anotada_url'] as String?,
+      deteccionesIA: json['detecciones_ia'] as Map<String, dynamic>?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -93,6 +104,9 @@ class SintomaInspeccion {
         'sintomas_funcionales':
             sintomasFuncionales!.map((e) => e.value).toList(),
       if (fotosUrls != null) 'fotos_urls': fotosUrls,
+      if (fotoOriginalUrl != null) 'foto_original_url': fotoOriginalUrl,
+      if (fotoAnotadaUrl != null) 'foto_anotada_url': fotoAnotadaUrl,
+      if (deteccionesIA != null) 'detecciones_ia': deteccionesIA,
     };
   }
 }

@@ -8,20 +8,15 @@ class HallazgoProfesional {
 
   // Clasificación Técnica
   final ClasificacionTecnica clasificacionTecnica;
-  final NivelSeveridad nivelSeveridad;
+  final NivelSeveridad severidad;
 
   // Hallazgos
-  final String? notasTexto;
-  final String? notasVozUrl; // Future: transcripción de voz
-
-  // Mapeo Estructural (vinculado al sistema niveles/zonas existente)
-  final String? idZona;
-  final String? elementoEstructural; // ej: "Columna C-4", "Viga V-102"
+  final String? notasTecnicas;
+  final List<String>? fotosProfesionales;
 
   // Recomendaciones
-  final String? recomendacionResumen;
-  final bool requiereRefuerzo;
-  final bool esHabitable;
+  final String? recomendaciones;
+  final bool requiereEvacuacion;
 
   final DateTime? createdAt;
 
@@ -30,14 +25,11 @@ class HallazgoProfesional {
     required this.idSolicitud,
     required this.idProfesional,
     required this.clasificacionTecnica,
-    required this.nivelSeveridad,
-    this.notasTexto,
-    this.notasVozUrl,
-    this.idZona,
-    this.elementoEstructural,
-    this.recomendacionResumen,
-    this.requiereRefuerzo = false,
-    this.esHabitable = true,
+    required this.severidad,
+    this.notasTecnicas,
+    this.fotosProfesionales,
+    this.recomendaciones,
+    this.requiereEvacuacion = false,
     this.createdAt,
   });
 
@@ -49,15 +41,14 @@ class HallazgoProfesional {
       idProfesional: json['id_profesional'] as String,
       clasificacionTecnica: ClasificacionTecnica.fromString(
           json['clasificacion_tecnica'] as String),
-      nivelSeveridad:
-          NivelSeveridad.fromString(json['nivel_severidad'] as String),
-      notasTexto: json['notas_texto'] as String?,
-      notasVozUrl: json['notas_voz_url'] as String?,
-      idZona: json['id_zona'] as String?,
-      elementoEstructural: json['elemento_estructural'] as String?,
-      recomendacionResumen: json['recomendacion_resumen'] as String?,
-      requiereRefuerzo: json['requiere_refuerzo'] as bool? ?? false,
-      esHabitable: json['es_habitable'] as bool? ?? true,
+      severidad:
+          NivelSeveridad.fromString(json['severidad'] as String),
+      notasTecnicas: json['notas_tecnicas'] as String?,
+      fotosProfesionales: json['fotos_profesionales'] != null
+          ? List<String>.from(json['fotos_profesionales'])
+          : null,
+      recomendaciones: json['recomendaciones'] as String?,
+      requiereEvacuacion: json['requiere_evacuacion'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -71,38 +62,32 @@ class HallazgoProfesional {
       'id_solicitud': idSolicitud,
       'id_profesional': idProfesional,
       'clasificacion_tecnica': clasificacionTecnica.value,
-      'nivel_severidad': nivelSeveridad.value,
-      if (notasTexto != null) 'notas_texto': notasTexto,
-      if (notasVozUrl != null) 'notas_voz_url': notasVozUrl,
-      if (idZona != null) 'id_zona': idZona,
-      if (elementoEstructural != null)
-        'elemento_estructural': elementoEstructural,
-      if (recomendacionResumen != null)
-        'recomendacion_resumen': recomendacionResumen,
-      'requiere_refuerzo': requiereRefuerzo,
-      'es_habitable': esHabitable,
+      'severidad': severidad.value,
+      if (notasTecnicas != null) 'notas_tecnicas': notasTecnicas,
+      if (fotosProfesionales != null) 'fotos_profesionales': fotosProfesionales,
+      if (recomendaciones != null) 'recomendaciones': recomendaciones,
+      'requiere_evacuacion': requiereEvacuacion,
     };
   }
 }
 
-// Enum para Clasificación Técnica
+// Enum para Clasificación Técnica (DEBE coincidir con BD)
 enum ClasificacionTecnica {
   fallaPorCorte('falla_por_corte', 'Falla por Corte',
       'Grietas diagonales por esfuerzos de corte'),
   asentamientoDiferencial('asentamiento_diferencial',
       'Asentamiento Diferencial', 'Hundimiento desigual del terreno'),
-  pandeoColumna(
-      'pandeo_columna', 'Pandeo de Columna', 'Deformación lateral de columna'),
-  corrosionAcero('corrosion', 'Corrosión de Acero',
-      'Deterioro del refuerzo por oxidación'),
-  humedadFiltracion('humedad_filtracion', 'Humedad por Filtración',
-      'Ingreso de agua comprometiendo estructura'),
-  eflorescencia('eflorescencia', 'Eflorescencia',
-      'Sales en superficie, posible problema de humedad'),
-  desprendimientoTarrajeo('desprendimiento_tarrajeo',
-      'Desprendimiento de Tarrajeo', 'Pérdida de recubrimiento superficial'),
-  deterioroGeneral(
-      'deterioro_general', 'Deterioro General', 'Envejecimiento natural');
+  patologiaHumedad('patologia_humedad', 'Patología por Humedad',
+      'Daños estructurales causados por humedad'),
+  deterioroMateriales('deterioro_materiales', 'Deterioro de Materiales',
+      'Degradación de elementos constructivos'),
+  deficienciaEstructural('deficiencia_estructural', 'Deficiencia Estructural',
+      'Problemas en el diseño o construcción estructural'),
+  sobrecarga('sobrecarga', 'Sobrecarga',
+      'Exceso de carga sobre elementos estructurales'),
+  fallaCimentacion('falla_cimentacion', 'Falla en Cimentación',
+      'Problemas en la base de la estructura'),
+  otros('otros', 'Otros', 'Otros hallazgos técnicos');
 
   final String value;
   final String displayName;
@@ -117,7 +102,7 @@ enum ClasificacionTecnica {
 
 // Enum para Nivel de Severidad
 enum NivelSeveridad {
-  leve('leve', 'Leve', 'No compromete seguridad estructural'),
+  superficial('superficial', 'Superficial', 'No compromete seguridad estructural'),
   moderado('moderado', 'Moderado', 'Requiere monitoreo y reparación programada'),
   severo('severo', 'Severo', 'Requiere intervención inmediata'),
   critico('critico', 'Crítico', '🔴 PELIGRO: Riesgo de colapso inminente');

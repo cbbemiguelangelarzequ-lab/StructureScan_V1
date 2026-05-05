@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 import '../../models/sintoma_inspeccion.dart';
 import '../../services/database_service.dart';
+import '../../widgets/modern_alert_dialog.dart';
 
 class InspeccionDeformacionScreen extends StatefulWidget {
   final String edificacionId;
@@ -24,16 +25,17 @@ class _InspeccionDeformacionScreenState
   // Selecciones del usuario
   UbicacionElemento? _ubicacion;
   final List<SintomaFuncional> _sintomasFuncionales = [];
-  final List<String> _fotosUrls = [];
+  
+  // Fotos capturadas con IA
+  final List<Map<String, dynamic>> _fotosCapturadasConIA = [];
 
   Future<void> _guardarSintoma() async {
     // Validación
     if (_ubicacion == null || _sintomasFuncionales.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor complete todos los campos'),
-          backgroundColor: kNaranjaAcento,
-        ),
+      ModernAlertDialog.showToast(
+        context,
+        message: 'Por favor complete todos los campos',
+        type: AlertType.warning,
       );
       return;
     }
@@ -45,24 +47,36 @@ class _InspeccionDeformacionScreenState
         tipoSintoma: TipoSintoma.deformacion,
         ubicacion: _ubicacion!,
         sintomasFuncionales: _sintomasFuncionales,
-        fotosUrls: _fotosUrls.isNotEmpty ? _fotosUrls : null,
+        fotosUrls: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA
+                .map((foto) => foto['foto_anotada_url'] as String)
+                .toList()
+            : null,
+        fotoOriginalUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_original_url'] as String?
+            : null,
+        fotoAnotadaUrl: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['foto_anotada_url'] as String?
+            : null,
+        deteccionesIA: _fotosCapturadasConIA.isNotEmpty
+            ? _fotosCapturadasConIA.first['detecciones_ia'] as Map<String, dynamic>?
+            : null,
       );
 
       await _dbService.crearSintoma(sintoma.toJson());
 
       if (mounted) {
-        // Navegar a anamnesis
-        Navigator.of(
-          context,
-        ).pushReplacementNamed('/anamnesis', arguments: widget.edificacionId);
+        Navigator.of(context).pushReplacementNamed(
+          '/anamnesis',
+          arguments: widget.edificacionId,
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: kRojoAdvertencia,
-          ),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al guardar síntoma',
+          type: AlertType.error,
         );
       }
     } finally {
@@ -150,7 +164,7 @@ class _InspeccionDeformacionScreenState
             padding: EdgeInsets.all(12.0),
             child: Row(
               children: [
-                Icon(Icons.warning, color: Colors.orange),
+                Icon(Icons.warning_rounded, color: Colors.orange),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -188,27 +202,34 @@ class _InspeccionDeformacionScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '3. Fotos (recomendado)',
+          '3. Fotos (Recomendado)',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () async {
-            final resultado = await Navigator.of(
-              context,
-            ).pushNamed('/analisis_camara', arguments: widget.edificacionId);
-            if (resultado != null && resultado is String) {
-              setState(() => _fotosUrls.add(resultado));
+            final resultado = await Navigator.of(context).pushNamed(
+              '/analisis_camara',
+              arguments: widget.edificacionId,
+            );
+            if (resultado != null && resultado is Map<String, dynamic>) {
+              setState(() {
+                _fotosCapturadasConIA.add({
+                  'foto_original_url': resultado['foto_original_url'],
+                  'foto_anotada_url': resultado['foto_anotada_url'],
+                  'detecciones_ia': resultado['detecciones_ia'],
+                });
+              });
             }
           },
-          icon: const Icon(Icons.camera_alt),
+          icon: const Icon(Icons.camera_alt_rounded),
           label: const Text('Tomar Foto con IA'),
         ),
-        if (_fotosUrls.isNotEmpty)
+        if (_fotosCapturadasConIA.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Text(
-              '${_fotosUrls.length} foto(s) capturada(s) ✓',
+              '${_fotosCapturadasConIA.length} foto(s) capturada(s) ✓',
               style: const TextStyle(
                 color: kVerdeExito,
                 fontWeight: FontWeight.bold,

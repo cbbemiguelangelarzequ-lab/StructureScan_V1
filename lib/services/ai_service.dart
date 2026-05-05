@@ -4,7 +4,6 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/edificacion.dart';
-import '../models/sintoma_inspeccion.dart';
 import '../models/hallazgo_profesional.dart';
 
 class AIService {
@@ -12,14 +11,14 @@ class AIService {
 
   AIService() {
     final apiKey = dotenv.env['GOOGLE_AI_API_KEY'];
-    if (apiKey == null || apiKey == 'AIzaSyCu5-HbQhhvfy92ls7PbZ0SjF6MQ2q8DUc') {
+    if (apiKey == null || apiKey.isEmpty) {
       throw Exception(
         'GOOGLE_AI_API_KEY no configurada en .env. '
         'Obtén tu clave en: https://makersuite.google.com/app/apikey',
       );
     }
 
-    _model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
+    _model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
   }
 
   /// Genera un informe técnico completo en formato Markdown
@@ -90,9 +89,18 @@ ${edificacion.riesgoCalculado != null ? '**Nivel de Riesgo Calculado:** ${edific
 ### Síntoma ${i + 1}: ${sintoma['tipo_sintoma'] ?? 'No especificado'}
 - **Descripción:** ${sintoma['descripcion'] ?? 'Sin descripción'}
 - **Ubicación:** ${sintoma['ubicacion'] ?? 'No especificada'}
-${sintoma['imagen_url'] != null ? '- **Evidencia fotográfica:** Disponible' : ''}
-
 ''');
+        
+        // Incluir URLs de fotos si existen
+        final fotosUrls = sintoma['fotos_urls'];
+        if (fotosUrls != null && fotosUrls is List && fotosUrls.isNotEmpty) {
+          buffer.writeln('- **Evidencia fotográfica:**');
+          for (var j = 0; j < fotosUrls.length; j++) {
+            buffer.writeln('  - Foto ${j + 1}: ${fotosUrls[j]}');
+          }
+        }
+        
+        buffer.writeln();
       }
     }
 
@@ -109,18 +117,16 @@ ${sintoma['imagen_url'] != null ? '- **Evidencia fotográfica:** Disponible' : '
           hallazgo['clasificacion_tecnica'] as String,
         );
         final severidad = NivelSeveridad.fromString(
-          hallazgo['nivel_severidad'] as String,
+          hallazgo['severidad'] as String,
         );
 
         buffer.writeln('''
 ### Hallazgo ${i + 1}: ${clasificacion.displayName}
 - **Severidad:** ${severidad.displayName} - ${severidad.description}
 - **Descripción Técnica:** ${clasificacion.description}
-${hallazgo['elemento_estructural'] != null ? '- **Elemento Afectado:** ${hallazgo['elemento_estructural']}' : ''}
-${hallazgo['notas_texto'] != null ? '- **Observaciones:** ${hallazgo['notas_texto']}' : ''}
-${hallazgo['recomendacion_resumen'] != null ? '- **Recomendación:** ${hallazgo['recomendacion_resumen']}' : ''}
-- **Requiere Refuerzo:** ${hallazgo['requiere_refuerzo'] == true ? 'Sí' : 'No'}
-- **Estructura Habitable:** ${hallazgo['es_habitable'] == true ? 'Sí' : 'No'}
+${hallazgo['notas_tecnicas'] != null ? '- **Observaciones:** ${hallazgo['notas_tecnicas']}' : ''}
+${hallazgo['recomendaciones'] != null ? '- **Recomendación:** ${hallazgo['recomendaciones']}' : ''}
+- **Requiere Evacuación:** ${hallazgo['requiere_evacuacion'] == true ? 'Sí' : 'No'}
 
 ''');
       }

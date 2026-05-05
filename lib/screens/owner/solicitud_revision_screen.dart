@@ -8,6 +8,7 @@ import '../../models/sintoma_inspeccion.dart';
 import '../../models/anamnesis.dart';
 import '../../models/solicitud_revision.dart';
 import '../../services/database_service.dart';
+import '../../widgets/modern_alert_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SolicitudRevisionScreen extends StatefulWidget {
@@ -50,9 +51,12 @@ class _SolicitudRevisionScreenState extends State<SolicitudRevisionScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('Error en _cargarDatos de solicitud_revision: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al cargar datos: $e',
+          type: AlertType.error,
         );
         Navigator.of(context).pop();
       }
@@ -84,58 +88,22 @@ class _SolicitudRevisionScreenState extends State<SolicitudRevisionScreen> {
         nivelRiesgo: _edificacion!.riesgoCalculado ?? NivelRiesgo.medio,
       );
 
-      await _dbService.crearSolicitudRevision(solicitud.toJson());
-
+      // Navegar a selección profesional con los datos (NO guardar todavía)
       if (mounted) {
-        // Mostrar diálogo de confirmación
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.check_circle, color: kVerdeExito, size: 32),
-                SizedBox(width: 12),
-                Text('Solicitud Enviada'),
-              ],
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Su solicitud de revisión ha sido enviada exitosamente a los profesionales.',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  '⏱️ Tiempo estimado de respuesta: 24-48 horas',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Recibirá una notificación cuando un ingeniero revise su caso.',
-                  style: TextStyle(fontSize: 14, color: kGrisOscuro),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Cerrar diálogo
-                  Navigator.of(context).pop(); // Volver al dashboard
-                  Navigator.of(context).pop(); // Volver al dashboard
-                },
-                child: const Text('Entendido'),
-              ),
-            ],
-          ),
+        Navigator.of(context).pushNamed(
+          '/seleccion_profesional',
+          arguments: {
+            'solicitud_data': solicitud.toJson(),
+            'from_solicitud': true,
+          },
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: kRojoAdvertencia),
+        ModernAlertDialog.showToast(
+          context,
+          message: 'Error al crear solicitud',
+          type: AlertType.error,
         );
       }
     } finally {
@@ -196,7 +164,7 @@ class _SolicitudRevisionScreenState extends State<SolicitudRevisionScreen> {
         padding: EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: kAzulSecundarioClaro, size: 32),
+            Icon(Icons.info_outline_rounded, color: kAzulSecundarioClaro, size: 32),
             SizedBox(width: 12),
             Expanded(
               child: Text(

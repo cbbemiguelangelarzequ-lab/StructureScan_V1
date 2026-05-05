@@ -6,6 +6,8 @@ class Edificacion {
   final String idUsuario;
   final String nombreEdificacion;
   final String? direccion;
+  final double? latitud;
+  final double? longitud;
 
   // Datos de Vulnerabilidad (Fase A)
   final TipoMaterial tipoMaterial;
@@ -26,6 +28,8 @@ class Edificacion {
     required this.idUsuario,
     required this.nombreEdificacion,
     this.direccion,
+    this.latitud,
+    this.longitud,
     required this.tipoMaterial,
     required this.tipoTecho,
     required this.formaGeometrica,
@@ -45,6 +49,8 @@ class Edificacion {
       idUsuario: json['id_usuario'] as String,
       nombreEdificacion: json['nombre_edificacion'] as String,
       direccion: json['direccion'] as String?,
+      latitud: json['latitud'] as double?,
+      longitud: json['longitud'] as double?,
       tipoMaterial: TipoMaterial.fromString(json['tipo_material'] as String),
       tipoTecho: TipoTecho.fromString(json['tipo_techo'] as String),
       formaGeometrica:
@@ -73,6 +79,8 @@ class Edificacion {
       'id_usuario': idUsuario,
       'nombre_edificacion': nombreEdificacion,
       if (direccion != null) 'direccion': direccion,
+      if (latitud != null) 'latitud': latitud,
+      if (longitud != null) 'longitud': longitud,
       'tipo_material': tipoMaterial.value,
       'tipo_techo': tipoTecho.value,
       'forma_geometrica': formaGeometrica.value,
@@ -90,6 +98,8 @@ class Edificacion {
     String? idUsuario,
     String? nombreEdificacion,
     String? direccion,
+    double? latitud,
+    double? longitud,
     TipoMaterial? tipoMaterial,
     TipoTecho? tipoTecho,
     FormaGeometrica? formaGeometrica,
@@ -106,6 +116,8 @@ class Edificacion {
       idUsuario: idUsuario ?? this.idUsuario,
       nombreEdificacion: nombreEdificacion ?? this.nombreEdificacion,
       direccion: direccion ?? this.direccion,
+      latitud: latitud ?? this.latitud,
+      longitud: longitud ?? this.longitud,
       tipoMaterial: tipoMaterial ?? this.tipoMaterial,
       tipoTecho: tipoTecho ?? this.tipoTecho,
       formaGeometrica: formaGeometrica ?? this.formaGeometrica,

@@ -77,8 +77,7 @@ class SeleccionSintomaScreen extends StatelessWidget {
               route = '/inspeccion_deformacion';
               break;
             case TipoSintoma.desprendimiento:
-              // Por ahora, redirigir a grieta (simplificado)
-              route = '/inspeccion_grieta';
+              route = '/inspeccion_desprendimiento';
               break;
           }
           Navigator.of(context).pushNamed(route, arguments: edificacionId);
